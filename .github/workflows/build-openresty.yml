@@ -1,4 +1,4 @@
-name: Build OpenResty with HTTP + Stream Lua (Ubuntu 24.04)
+name: Build OpenResty with HTTP + Stream Lua (Ubuntu 24.04 amd64)
 
 on:
   workflow_dispatch:
@@ -63,11 +63,11 @@ jobs:
       # 5️⃣ 打包编译产物
       - name: Package artifact
         run: |
-          tar czf openresty-ubuntu24-arm64.tar.gz /usr/local/openresty
+          tar czf openresty-ubuntu24-amd64.tar.gz /usr/local/openresty
 
       # 6️⃣ 上传产物到 GitHub
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: openresty-ubuntu24-arm64
-          path: openresty-ubuntu24-arm64.tar.gz
+          name: openresty-ubuntu24-amd64
+          path: openresty-ubuntu24-amd64.tar.gz
