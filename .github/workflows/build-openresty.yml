@@ -26,6 +26,7 @@ jobs:
           git clone https://github.com/stayfocus/openresty.git
           cd openresty
           git checkout main  # 或者使用你需要的分支
+          chmod +x ./configure  # 添加执行权限
 
       - name: Build OpenResty
         run: |
