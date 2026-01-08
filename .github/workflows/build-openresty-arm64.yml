@@ -8,77 +8,86 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout repo (for workflow only)
+      # 1️⃣ Checkout workflow repo (必须)
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 1️⃣ 启用 QEMU（arm64）
+      # 2️⃣ 启用 QEMU（arm64）
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
 
-      # 2️⃣ 启用 Docker Buildx
+      # 3️⃣ 启用 Docker Buildx（支持多平台）
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3️⃣ 在 arm64 Ubuntu 24.04 容器里编译 OpenResty
+      # 4️⃣ 编译 OpenResty（在 arm64 Docker 容器内）
       - name: Build OpenResty in ARM64 container
         run: |
-          docker run --rm --platform=linux/arm64 \
-            -v ${{ github.workspace }}:/work \
+          docker run --rm \
+            --platform linux/arm64 \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
             ubuntu:24.04 bash -eux <<'EOF'
 
-          # === 基础环境 ===
-          apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y \
-            build-essential \
-            wget \
-            ca-certificates \
-            libpcre3-dev \
-            zlib1g-dev \
-            libssl-dev \
-            perl \
-            git \
-            curl \
-            unzip
+            # === 安装依赖 ===
+            apt update
+            DEBIAN_FRONTEND=noninteractive apt install -y \
+              build-essential \
+              wget \
+              ca-certificates \
+              libpcre3-dev \
+              zlib1g-dev \
+              libssl-dev \
+              perl \
+              git \
+              curl \
+              unzip
 
-          cd /work
+            # === 克隆你修改的 OpenResty ===
+            git clone https://github.com/stayfocus/openresty.git
+            cd openresty
+            git checkout main
+            chmod +x ./configure
 
-          # === 拉取你修改的 OpenResty ===
-          git clone https://github.com/stayfocus/openresty.git
-          cd openresty
-          git checkout main
+            # === 编译 OpenResty ===
+            ./configure \
+              --prefix=/usr/local/openresty \
+              --with-http_ssl_module \
+              --with-stream \
+              --with-stream_ssl_module \
+              --with-stream_realip_module
 
-          # === 编译 ===
-          ./configure \
-            --prefix=/usr/local/openresty \
-            --with-http_ssl_module \
-            --with-stream \
-            --with-stream_ssl_module \
-            --with-stream_realip_module
+            # 让 make 输出日志 + 并行
+            make -j$(nproc)
 
-          make -j$(nproc)
+            # 安装
+            chmod +x build/install
+            make install
 
-          # install 脚本权限修复
-          chmod +x build/install
-          make install
+            # 可执行权限兜底
+            chmod +x /usr/local/openresty/bin/* || true
+            chmod +x /usr/local/openresty/nginx/sbin/* || true
+            chmod +x /usr/local/openresty/luajit/bin/* || true
 
-          # 可执行权限兜底
-          chmod +x /usr/local/openresty/bin/* || true
-          chmod +x /usr/local/openresty/nginx/sbin/* || true
-          chmod +x /usr/local/openresty/luajit/bin/* || true
+            # === 验证 ===
+            uname -m
+            file /usr/local/openresty/nginx/sbin/nginx
+            /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
 
-          # === 验证（关键）===
-          uname -m
-          file /usr/local/openresty/nginx/sbin/nginx
-          /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
-
-          # === 打包产物 ===
-          tar czf /work/openresty-linux-arm64.tar.gz /usr/local/openresty
+            # === 打包产物到宿主工作目录 ===
+            tar czf /work/openresty-linux-arm64.tar.gz /usr/local/openresty
 
           EOF
 
-      # 4️⃣ 上传 ARM64 产物
+      # 5️⃣ Debug: 查看 tar 是否生成（可选）
+      - name: Debug workspace
+        run: |
+          pwd
+          ls -lah
+
+      # 6️⃣ 上传 artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
