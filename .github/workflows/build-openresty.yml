@@ -1,4 +1,4 @@
-name: Build OpenResty with HTTP + Stream Lua (Ubuntu 24.04 arm64)
+name: Build OpenResty with HTTP + Stream Lua (Ubuntu 24.04)
 
 on:
   workflow_dispatch:
