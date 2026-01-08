@@ -8,21 +8,21 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      # 1️⃣ Checkout workflow repo (必须)
-      - name: Checkout repo
+      # 1️⃣ Checkout repo (可选，如果你 repo 有 workflow 本身)
+      - name: Checkout workflow repo
         uses: actions/checkout@v4
 
-      # 2️⃣ 启用 QEMU（arm64）
+      # 2️⃣ 设置 QEMU 支持 ARM64
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
 
-      # 3️⃣ 启用 Docker Buildx（支持多平台）
+      # 3️⃣ 设置 Docker Buildx（多平台构建）
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 4️⃣ 编译 OpenResty（在 arm64 Docker 容器内）
+      # 4️⃣ 编译 OpenResty 在 ARM64 Docker 容器
       - name: Build OpenResty in ARM64 container
         run: |
           docker run --rm \
@@ -31,7 +31,7 @@ jobs:
             -w /work \
             ubuntu:24.04 bash -eux <<'EOF'
 
-            # === 安装依赖 ===
+            # 安装编译依赖
             apt update
             DEBIAN_FRONTEND=noninteractive apt install -y \
               build-essential \
@@ -45,13 +45,13 @@ jobs:
               curl \
               unzip
 
-            # === 克隆你修改的 OpenResty ===
+            # 克隆你的修改版 OpenResty
             git clone https://github.com/stayfocus/openresty.git
             cd openresty
             git checkout main
             chmod +x ./configure
 
-            # === 编译 OpenResty ===
+            # 配置 + 编译 OpenResty
             ./configure \
               --prefix=/usr/local/openresty \
               --with-http_ssl_module \
@@ -59,30 +59,28 @@ jobs:
               --with-stream_ssl_module \
               --with-stream_realip_module
 
-            # 让 make 输出日志 + 并行
+            # 并行编译
             make -j$(nproc)
 
-            # 安装
+            # 安装（root 用户在容器里可以直接）
             chmod +x build/install
             make install
 
-            # 可执行权限兜底
+            # 修复可执行权限
             chmod +x /usr/local/openresty/bin/* || true
             chmod +x /usr/local/openresty/nginx/sbin/* || true
             chmod +x /usr/local/openresty/luajit/bin/* || true
 
-            # === 验证 ===
-            uname -m
-            file /usr/local/openresty/nginx/sbin/nginx
+            # 验证 resty.core
             /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
 
-            # === 打包产物到宿主工作目录 ===
+            # 打包产物到挂载目录 /work，保证宿主机可见
             tar czf /work/openresty-linux-arm64.tar.gz /usr/local/openresty
 
           EOF
 
-      # 5️⃣ Debug: 查看 tar 是否生成（可选）
-      - name: Debug workspace
+      # 5️⃣ 可选 debug，确认 tar 包生成
+      - name: Debug workspace files
         run: |
           pwd
           ls -lah
