@@ -1,11 +1,11 @@
-name: Build Modified OpenResty (Ubuntu 24.04 arm64)
+name: Build OpenResty with HTTP + Stream Lua (Ubuntu 24.04 arm64)
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04  # 官方 runner，避免 Docker 容器权限问题
+    runs-on: ubuntu-24.04
 
     steps:
       # 1️⃣ 安装编译依赖
@@ -24,15 +24,15 @@ jobs:
             curl \
             unzip
 
-      # 2️⃣ 克隆你的修改版 OpenResty
+      # 2️⃣ 克隆你修改的 OpenResty 源码
       - name: Clone modified OpenResty
         run: |
           git clone https://github.com/stayfocus/openresty.git
           cd openresty
-          git checkout main  # 或你需要的分支
+          git checkout main  # 或你想用的分支
           chmod +x ./configure  # 确保 configure 可执行
 
-      # 3️⃣ 编译 OpenResty（启用 HTTP + stream + stream SSL）
+      # 3️⃣ 编译 OpenResty（开启 HTTP + stream + stream SSL）
       - name: Build OpenResty
         run: |
           cd openresty
@@ -44,7 +44,7 @@ jobs:
           make -j$(nproc)
           sudo make install
 
-      # 4️⃣ 验证 resty.core 模块
+      # 4️⃣ 验证 resty.core
       - name: Verify resty.core
         run: |
           /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
