@@ -46,6 +46,7 @@ jobs:
               echo 'Cloning stayfocus/openresty...' && \
               git clone --depth 1 https://github.com/stayfocus/openresty.git src && \
               cd src && \
+              chmod +x ./configure && \
               ./configure --prefix=/build/openresty-linux-arm64 && \
               make -j$(nproc) && \
               make install
