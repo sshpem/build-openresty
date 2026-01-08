@@ -27,7 +27,7 @@ jobs:
       # 2️⃣ 克隆你修改的 OpenResty 源码
       - name: Clone modified OpenResty
         run: |
-          git clone https://github.com/stayfocus/openresty.git
+          git clone https://github.com/openresty/openresty.git
           cd openresty
           git checkout main  # 或你想用的分支
           chmod +x ./configure  # 确保 configure 可执行
