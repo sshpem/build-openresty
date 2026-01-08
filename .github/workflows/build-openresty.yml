@@ -1,16 +1,17 @@
-name: Build Modified OpenResty (Ubuntu 24.04 arm64)
+name: Build OpenResty with stream_lua_module (Ubuntu 24.04 arm64)
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04  # 使用 Ubuntu 24.04 直接运行
+    runs-on: ubuntu-24.04
 
     steps:
+      # 1️⃣ 安装依赖
       - name: Install build dependencies
         run: |
-          sudo apt update  # 使用 sudo 提升权限
+          sudo apt update
           sudo DEBIAN_FRONTEND=noninteractive apt install -y \
             build-essential \
             wget \
@@ -19,16 +20,27 @@ jobs:
             zlib1g-dev \
             libssl-dev \
             perl \
-            git
+            git \
+            curl \
+            unzip
 
-      - name: Clone the modified OpenResty repository
+      # 2️⃣ 克隆你修改的 OpenResty
+      - name: Clone modified OpenResty
         run: |
           git clone https://github.com/stayfocus/openresty.git
           cd openresty
-          git checkout main  # 或者使用你需要的分支
-          chmod +x ./configure  # 添加执行权限
+          git checkout main
+          chmod +x ./configure
 
-      - name: Build OpenResty
+      # 3️⃣ 克隆 lua-nginx-module，用于 stream_lua_module
+      - name: Clone lua-nginx-module
+        run: |
+          git clone https://github.com/openresty/lua-nginx-module.git
+          cd lua-nginx-module
+          git checkout master
+
+      # 4️⃣ 编译 OpenResty + stream_lua_module
+      - name: Build OpenResty with stream Lua
         run: |
           cd openresty
           ./configure \
@@ -36,20 +48,23 @@ jobs:
             --with-http_ssl_module \
             --with-stream \
             --with-stream_ssl_module \
-            --with-stream_lua_module
+            --add-module=$(pwd)/../lua-nginx-module  # 添加 lua-nginx-module，支持 stream_lua_module
           make -j$(nproc)
           sudo make install
 
+      # 5️⃣ 验证 resty.core
       - name: Verify resty.core
         run: |
           /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
 
+      # 6️⃣ 打包产物
       - name: Package artifact
         run: |
-          tar czf openresty-ubuntu24-arm64-modified.tar.gz /usr/local/openresty
+          tar czf openresty-ubuntu24-arm64-stream_lua.tar.gz /usr/local/openresty
 
+      # 7️⃣ 上传产物
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: openresty-ubuntu24-arm64-modified
-          path: openresty-ubuntu24-arm64-modified.tar.gz
+          name: openresty-ubuntu24-arm64-stream_lua
+          path: openresty-ubuntu24-arm64-stream_lua.tar.gz
