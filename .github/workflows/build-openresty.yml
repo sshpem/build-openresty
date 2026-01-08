@@ -40,7 +40,8 @@ jobs:
             --prefix=/usr/local/openresty \
             --with-http_ssl_module \
             --with-stream \
-            --with-stream_ssl_module
+            --with-stream_ssl_module \
+            --with-stream_realip_module
           make -j$(nproc)
           sudo make install
 
