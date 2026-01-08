@@ -43,6 +43,7 @@ jobs:
             --with-stream_ssl_module \
             --with-stream_realip_module
           make -j$(nproc)
+          chmod +x build/install
           sudo make install
 
       # 4️⃣ 验证 resty.core
