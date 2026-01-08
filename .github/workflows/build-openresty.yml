@@ -5,16 +5,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
-
-    container:
-      image: ubuntu:24.04
-      options: --platform=linux/arm64 --memory=4g --privileged  # 增加特权模式
+    runs-on: ubuntu-24.04  # 使用 Ubuntu 24.04 直接运行
 
     steps:
       - name: Install build dependencies
         run: |
-          sudo apt update  # 使用sudo提升权限
+          sudo apt update  # 使用 sudo 提升权限
           sudo DEBIAN_FRONTEND=noninteractive apt install -y \
             build-essential \
             wget \
@@ -46,3 +42,13 @@ jobs:
       - name: Verify resty.core
         run: |
           /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
+
+      - name: Package artifact
+        run: |
+          tar czf openresty-ubuntu24-arm64-modified.tar.gz /usr/local/openresty
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openresty-ubuntu24-arm64-modified
+          path: openresty-ubuntu24-arm64-modified.tar.gz
