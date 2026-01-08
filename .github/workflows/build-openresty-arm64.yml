@@ -1,58 +1,59 @@
 name: Build OpenResty ARM64
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   build-arm64:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
 
     steps:
-    # 1. 检出仓库
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      # 1. Checkout this workflow repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # 2. 设置 QEMU（模拟 ARM 架构）
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-      with:
-        platforms: arm64
+      # 2. Set up QEMU for ARM64
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+          image: docker.io/tonistiigi/binfmt:latest
+          cache-image: true
 
-    # 3. 设置 Docker Buildx
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      # 3. Set up Docker Buildx (optional, needed for advanced builds)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    # 4. 构建 ARM64 OpenResty
-    - name: Build OpenResty for ARM64
-      run: |
-        mkdir -p build-arm64
-        docker run --rm -t \
-          -v ${{ github.workspace }}:/src \
-          -w /src \
-          --platform linux/arm64 \
-          debian:bookworm-slim \
-          bash -c "
-            apt-get update && apt-get install -y \
-              build-essential wget curl libpcre3-dev zlib1g-dev libssl-dev perl \
-              && ./configure --prefix=/src/build-arm64 \
-              && make -j$(nproc) \
-              && make install
-          "
+      # 4. Build OpenResty inside ARM64 container
+      - name: Build OpenResty for ARM64
+        run: |
+          mkdir -p build
+          docker run --rm -t \
+            -v ${{ github.workspace }}/build:/build \
+            -w /build \
+            --platform linux/arm64 \
+            ubuntu:24.04 \
+            bash -c "
+              apt-get update && \
+              apt-get install -y build-essential curl libpcre3-dev libssl-dev perl make && \
+              echo 'Cloning stayfocus/openresty...' && \
+              git clone --depth 1 https://github.com/stayfocus/openresty.git src && \
+              cd src && \
+              ./configure --prefix=/build/openresty-linux-arm64 && \
+              make -j$(nproc) && \
+              make install
+            "
 
-    # 5. 打包编译产物
-    - name: Package artifacts
-      run: |
-        cd build-arm64
-        tar czf ../openresty-arm64.tar.gz *
-
-    # 6. 上传 artifact
-    - name: Upload ARM64 build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: openresty-arm64
-        path: openresty-arm64.tar.gz
+      # 5. Upload compiled artifact
+      - name: Upload OpenResty artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openresty-linux-arm64
+          path: build/openresty-linux-arm64
