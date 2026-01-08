@@ -1,0 +1,58 @@
+name: Build Modified OpenResty (Ubuntu 24.04 arm64)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    container:
+      image: ubuntu:24.04
+      options: --platform=linux/arm64
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt update
+          DEBIAN_FRONTEND=noninteractive apt install -y \
+            build-essential \
+            wget \
+            ca-certificates \
+            libpcre3-dev \
+            zlib1g-dev \
+            libssl-dev \
+            perl \
+            git
+
+      - name: Clone the modified OpenResty repository
+        run: |
+          git clone https://github.com/stayfocus/openresty.git
+          cd openresty
+          git checkout main  # or the specific branch you want
+
+      - name: Build OpenResty
+        run: |
+          cd openresty
+          ./configure \
+            --prefix=/usr/local/openresty \
+            --with-http_ssl_module \
+            --with-stream \
+            --with-stream_ssl_module \
+            --with-stream_lua_module
+          make -j$(nproc)
+          sudo make install
+
+      - name: Verify resty.core
+        run: |
+          /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
+
+      - name: Package artifact
+        run: |
+          tar czf openresty-ubuntu24-arm64-modified.tar.gz /usr/local/openresty
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openresty-ubuntu24-arm64-modified
+          path: openresty-ubuntu24-arm64-modified.tar.gz
