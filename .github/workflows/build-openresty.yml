@@ -7,11 +7,15 @@ jobs:
   build:
     runs-on: ubuntu-24.04
 
+    container:
+      image: ubuntu:24.04
+      options: --platform=linux/arm64 --memory=4g --privileged  # 增加特权模式
+
     steps:
       - name: Install build dependencies
         run: |
-          apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y \
+          sudo apt update  # 使用sudo提升权限
+          sudo DEBIAN_FRONTEND=noninteractive apt install -y \
             build-essential \
             wget \
             ca-certificates \
@@ -25,7 +29,7 @@ jobs:
         run: |
           git clone https://github.com/stayfocus/openresty.git
           cd openresty
-          git checkout main  # or the specific branch you want
+          git checkout main  # 或者使用你需要的分支
 
       - name: Build OpenResty
         run: |
@@ -42,13 +46,3 @@ jobs:
       - name: Verify resty.core
         run: |
           /usr/local/openresty/bin/resty -e "require 'resty.core'; print('resty.core OK')"
-
-      - name: Package artifact
-        run: |
-          tar czf openresty-ubuntu24-arm64-modified.tar.gz /usr/local/openresty
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: openresty-ubuntu24-arm64-modified
-          path: openresty-ubuntu24-arm64-modified.tar.gz
