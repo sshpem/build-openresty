@@ -9,7 +9,7 @@ jobs:
 
     container:
       image: ubuntu:24.04
-      options: --platform=linux/arm64 --memory=4g
+      options: --platform=linux/arm64 --memory=4g --privileged
 
     steps:
       - name: Install build dependencies
