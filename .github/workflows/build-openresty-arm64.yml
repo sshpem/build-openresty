@@ -48,12 +48,11 @@ jobs:
               cd src && \
               chmod +x ./configure && \
               echo 'Configuring OpenResty...' && \
-              ./configure --prefix=/build/openresty-linux-arm64 \
-              INSTALL=/usr/bin/install && \
+              ./configure --prefix=/build/openresty-linux-arm64 && \
               echo 'Building...' && \
               make -j$(nproc) && \
               echo 'Installing...' && \
-              make install
+              make install INSTALL=/usr/bin/install
             "
 
       # 5. Upload compiled artifact
