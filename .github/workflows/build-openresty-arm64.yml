@@ -58,7 +58,7 @@ jobs:
               make -j$(nproc) && \
               echo 'Installing...' && \
               chmod +x build/install && \
-              make install
+              make install DESTDIR=/build/openresty-linux-arm64
             "
 
       # 5. Upload compiled artifact
