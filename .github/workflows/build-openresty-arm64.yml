@@ -52,7 +52,8 @@ jobs:
               echo 'Building...' && \
               make -j$(nproc) && \
               echo 'Installing...' && \
-              make install INSTALL=/usr/bin/install
+              chmod +x build/install && \
+              make install
             "
 
       # 5. Upload compiled artifact
