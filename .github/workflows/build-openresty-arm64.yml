@@ -48,7 +48,12 @@ jobs:
               cd src && \
               chmod +x ./configure && \
               echo 'Configuring OpenResty...' && \
-              ./configure --prefix=/build/openresty-linux-arm64 && \
+              ./configure \
+                --prefix=/usr/local/openresty \
+                --with-http_ssl_module \
+                --with-stream \
+                --with-stream_ssl_module \
+                --with-stream_realip_module && \
               echo 'Building...' && \
               make -j$(nproc) && \
               echo 'Installing...' && \
